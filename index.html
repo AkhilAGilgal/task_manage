@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cyber Task Board</title>
     <style>
-        /* Cyber Security Aesthetic CSS */
+        /* Your existing CSS styles remain here */
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;700&display=swap');
 
         :root {
@@ -133,66 +133,62 @@
         </ul>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const bucketUrl = 'https://kvdb.io/X7a9uQc5A936XbJiMrzY3F/tasks'; 
+            // Your web app's Firebase configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyAdLLw6ykoo9iWf0h_XeQX7T-qsZFWpuAg",
+                authDomain: "task-manage-acee4.firebaseapp.com",
+                databaseURL: "https://task-manage-acee4-default-rtdb.firebaseio.com/",
+                projectId: "task-manage-acee4",
+                storageBucket: "task-manage-acee4.firebasestorage.app",
+                messagingSenderId: "73207115259",
+                appId: "1:73207115259:web:3bea40c938e0b299282f5e"
+            };
+
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
             const taskForm = document.getElementById('task-form');
             const taskInput = document.getElementById('task-input');
             const taskList = document.getElementById('task-list');
+            const tasksRef = database.ref('tasks');
 
-            let tasks = [];
-
-            // Fetch tasks from the database
-            const loadTasks = async () => {
-                try {
-                    const response = await fetch(bucketUrl);
-                    if (response.status === 404) {
-                        tasks = [];
-                    } else {
-                        tasks = await response.json();
-                    }
-                    renderTasks();
-                } catch (error) {
-                    console.error("Error loading tasks:", error);
+            // Add a new task
+            taskForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newTaskText = taskInput.value.trim();
+                if (newTaskText !== '') {
+                    tasksRef.push({ text: newTaskText });
+                    taskInput.value = '';
                 }
-            };
-
-            // Save tasks to the database
-            const saveTasks = async () => {
-                try {
-                    await fetch(bucketUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(tasks)
-                    });
-                } catch (error) {
-                    console.error("Error saving tasks:", error);
-                }
-            };
+            });
 
             // Display tasks on the page
-            const renderTasks = () => {
+            const renderTasks = (tasks) => {
                 taskList.innerHTML = '';
-                tasks.forEach((taskText, index) => {
+                for (let taskId in tasks) {
+                    const task = tasks[taskId];
                     const li = document.createElement('li');
                     const span = document.createElement('span');
-                    span.textContent = taskText;
+                    span.textContent = task.text;
 
                     span.addEventListener('click', () => {
-                        const newText = prompt('Edit task:', taskText);
+                        const newText = prompt('Edit task:', task.text);
                         if (newText && newText.trim() !== '') {
-                            tasks[index] = newText.trim();
-                            saveTasks();
-                            renderTasks();
+                            database.ref('tasks/' + taskId).set({ text: newText.trim() });
                         }
                     });
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.textContent = '✖';
                     deleteBtn.onclick = () => {
-                        tasks.splice(index, 1);
-                        saveTasks();
-                        renderTasks();
+                        database.ref('tasks/' + taskId).remove();
                     };
 
                     const actions = document.createElement('div');
@@ -202,23 +198,14 @@
                     li.appendChild(span);
                     li.appendChild(actions);
                     taskList.appendChild(li);
-                });
+                }
             };
 
-            // Add a new task
-            taskForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const newTaskText = taskInput.value.trim();
-                if (newTaskText !== '') {
-                    tasks.push(newTaskText);
-                    taskInput.value = '';
-                    saveTasks();
-                    renderTasks();
-                }
+            // Listen for changes in the database
+            tasksRef.on('value', (snapshot) => {
+                const tasks = snapshot.val();
+                renderTasks(tasks);
             });
-
-            // Initial load of tasks
-            loadTasks();
         });
     </script>
 </body>
