@@ -60,31 +60,18 @@
                 0 0 100px var(--primary-color),
                 0 0 150px var(--primary-color);
             }
-            20%, 24%, 55% {
+            20%, 24%, 55% {       
                 text-shadow: none;
             }
         }
 
         #task-form {
             display: flex;
-            flex-wrap: wrap; /* Allow items to wrap */
             margin-bottom: 20px;
-            gap: 10px; /* Add space between form elements */
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
+        #task-input {
             flex-grow: 1;
-        }
-
-        .form-group label {
-            font-size: 0.8em;
-            margin-bottom: 5px;
-            color: var(--primary-color);
-        }
-
-        #task-input, #deadline-date, #deadline-time {
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
@@ -92,10 +79,6 @@
             font-family: inherit;
         }
 
-        #task-input {
-            width: 100%; /* Make task input take full width */
-        }
-        
         #add-task-btn {
             background-color: var(--primary-color);
             color: var(--background-color);
@@ -104,8 +87,6 @@
             cursor: pointer;
             font-weight: bold;
             transition: background-color 0.3s;
-            height: fit-content;
-            align-self: flex-end; /* Align button to the bottom */
         }
 
         #add-task-btn:hover {
@@ -121,28 +102,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 10px;
+            padding: 10px;
             border-bottom: 1px dashed var(--border-color);
         }
-        
-        .task-content {
-            flex-grow: 1;
-        }
-        
-        .task-text {
+
+        li span {
             cursor: pointer;
-            font-size: 1.1em;
-        }
-        
-        .task-meta {
-            font-size: 0.8em;
-            color: #a0a0a0;
-            margin-top: 8px;
-        }
-        
-        .task-meta .deadline {
-            color: #ff5555; /* A reddish color for deadlines */
-            font-weight: bold;
         }
 
         .task-actions button {
@@ -158,21 +123,10 @@
 <body>
 
     <div id="task-container">
-        <h1>// Secure Task Protocol //</h1>
+        <h1>// TASKS PENDING  //</h1>
         <form id="task-form">
-            <div class="form-group" style="width: 100%;">
-                <label for="task-input">New Task:</label>
-                <input type="text" id="task-input" placeholder="Enter task description...">
-            </div>
-            <div class="form-group">
-                <label for="deadline-date">Deadline Date:</label>
-                <input type="date" id="deadline-date">
-            </div>
-            <div class="form-group">
-                <label for="deadline-time">Deadline Time:</label>
-                <input type="time" id="deadline-time">
-            </div>
-            <button type="submit" id="add-task-btn">Transmit</button>
+            <input type="text" id="task-input" placeholder="Initiate new task...">
+            <button type="submit" id="add-task-btn">Add</button>
         </form>
         <ul id="task-list">
             <!-- Tasks will be loaded here -->
@@ -185,16 +139,15 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- IMPORTANT ---
-            // PASTE YOUR FIREBASE CONFIGURATION OBJECT HERE
+            // Your web app's Firebase configuration
             const firebaseConfig = {
-                apiKey: "YOUR_API_KEY",
-                authDomain: "YOUR_AUTH_DOMAIN",
-                databaseURL: "YOUR_DATABASE_URL",
-                projectId: "YOUR_PROJECT_ID",
-                storageBucket: "YOUR_STORAGE_BUCKET",
-                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-                appId: "YOUR_APP_ID"
+                apiKey: "AIzaSyAdLLw6ykoo9iWf0h_XeQX7T-qsZFWpuAg",
+                authDomain: "task-manage-acee4.firebaseapp.com",
+                databaseURL: "https://task-manage-acee4-default-rtdb.firebaseio.com/",
+                projectId: "task-manage-acee4",
+                storageBucket: "task-manage-acee4.firebasestorage.app",
+                messagingSenderId: "73207115259",
+                appId: "1:73207115259:web:3bea40c938e0b299282f5e"
             };
 
             // Initialize Firebase
@@ -203,8 +156,6 @@
 
             const taskForm = document.getElementById('task-form');
             const taskInput = document.getElementById('task-input');
-            const deadlineDateInput = document.getElementById('deadline-date');
-            const deadlineTimeInput = document.getElementById('deadline-time');
             const taskList = document.getElementById('task-list');
             const tasksRef = database.ref('tasks');
 
@@ -212,80 +163,39 @@
             taskForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const newTaskText = taskInput.value.trim();
-                const deadlineDate = deadlineDateInput.value;
-                const deadlineTime = deadlineTimeInput.value;
-
-                if (newTaskText !== '' && deadlineDate !== '' && deadlineTime !== '') {
-                    const deadline = new Date(`${deadlineDate}T${deadlineTime}`).toISOString();
-                    const createdAt = new Date().toISOString();
-
-                    tasksRef.push({
-                        text: newTaskText,
-                        deadline: deadline,
-                        createdAt: createdAt
-                    });
-
-                    // Clear form fields
+                if (newTaskText !== '') {
+                    tasksRef.push({ text: newTaskText });
                     taskInput.value = '';
-                    deadlineDateInput.value = '';
-                    deadlineTimeInput.value = '';
-                } else {
-                    alert('Please fill out all fields: task description, deadline date, and time.');
                 }
             });
 
             // Display tasks on the page
             const renderTasks = (tasks) => {
                 taskList.innerHTML = '';
-                // Sort tasks by creation date, newest first
-                const sortedTaskIds = tasks ? Object.keys(tasks).sort((a, b) => {
-                    return new Date(tasks[b].createdAt) - new Date(tasks[a].createdAt);
-                }) : [];
-
-                for (let taskId of sortedTaskIds) {
+                for (let taskId in tasks) {
                     const task = tasks[taskId];
                     const li = document.createElement('li');
-
-                    // Task Content Div
-                    const taskContent = document.createElement('div');
-                    taskContent.className = 'task-content';
-
-                    // Task Text Span
                     const span = document.createElement('span');
-                    span.className = 'task-text';
                     span.textContent = task.text;
+
                     span.addEventListener('click', () => {
                         const newText = prompt('Edit task:', task.text);
                         if (newText && newText.trim() !== '') {
-                            // Only update the text, keep other data
-                            database.ref('tasks/' + taskId).update({ text: newText.trim() });
+                            database.ref('tasks/' + taskId).set({ text: newText.trim() });
                         }
                     });
 
-                    // Task Metadata (Created at, Deadline)
-                    const meta = document.createElement('div');
-                    meta.className = 'task-meta';
-                    const deadlineDate = new Date(task.deadline);
-                    const createdDate = new Date(task.createdAt);
-                    meta.innerHTML = `
-                        Deadline: <span class="deadline">${deadlineDate.toLocaleString()}</span><br>
-                        Created: ${createdDate.toLocaleString()}
-                    `;
-                    
-                    taskContent.appendChild(span);
-                    taskContent.appendChild(meta);
-
-                    // Action Buttons (Delete)
-                    const actions = document.createElement('div');
-                    actions.className = 'task-actions';
                     const deleteBtn = document.createElement('button');
                     deleteBtn.textContent = '✖';
                     deleteBtn.onclick = () => {
                         database.ref('tasks/' + taskId).remove();
                     };
+
+                    const actions = document.createElement('div');
+                    actions.className = 'task-actions';
                     actions.appendChild(deleteBtn);
 
-                    li.appendChild(taskContent);
+                    li.appendChild(span);
                     li.appendChild(actions);
                     taskList.appendChild(li);
                 }
